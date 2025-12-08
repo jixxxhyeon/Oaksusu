@@ -4,6 +4,7 @@ import axios from "axios";
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { FcGoogle } from 'react-icons/fc';
+import { useNavigate } from "react-router-dom";
 import "./Main.css";
 import "../LoginPage/Login.css"; 
 
@@ -42,12 +43,12 @@ const AuthButton = styled.button`
   }
 `;
 
-const Main = () => {
+const Main = ({ searchQuery, setSearchQuery, searchResults, setSearchResults }) => {
+
   const [user, setUser] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Firebase의 onAuthStateChanged를 사용하여 로그인 상태를 실시간으로 감지
@@ -103,6 +104,12 @@ const Main = () => {
     }
   };
 
+  // 책 아이템 클릭 시 페이지 이동하는 기능 추가
+  const handleBookClick = (book) => {
+    // book.id 를 URL에 넣고, 상세 정보는 state 로 함께 넘겨주기
+    navigate(`/book/${book.id}`, { state: { book } });
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     fetchBooks();
@@ -140,7 +147,8 @@ const Main = () => {
 
       <div className="book-list">
         {searchResults.map((book) => (
-          <div key={book.id} className="book-item">
+          // onClick 기능 추가: 클릭 시 상세페이지로 이동
+          <div key={book.id} className="book-item" onClick={() => handleBookClick(book)}>
             <img
               src={
                 book.volumeInfo.imageLinks?.thumbnail ||

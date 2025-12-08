@@ -85,3 +85,7 @@
   color: #666;
   margin: 0;
 }
+
+.book-item {
+  cursor: pointer;
+}
