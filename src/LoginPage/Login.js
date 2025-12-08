@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from '../../firebase'; // 2번 단계에서 만든 파일을 import 합니다.
+import { auth } from '../firebase'; // 2번 단계에서 만든 파일을 import 합니다.
 import { FcGoogle } from 'react-icons/fc'; // Google 아이콘 import
 import './Login.css'; // CSS 파일 import
 

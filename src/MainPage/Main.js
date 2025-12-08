@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "../../firebase";
+import { auth } from "../firebase";
 import { FcGoogle } from 'react-icons/fc';
 import "./Main.css";
 import "../LoginPage/Login.css"; 
@@ -49,7 +48,6 @@ const Main = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Firebase의 onAuthStateChanged를 사용하여 로그인 상태를 실시간으로 감지
