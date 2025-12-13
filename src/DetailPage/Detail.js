@@ -18,8 +18,6 @@ const Detail = () => {
     );
   }
 
-  const info = book.volumeInfo;
- 
   return (
     <div className="detail-container">
       <button className="back-button" onClick={() => navigate(-1)}>
@@ -29,25 +27,25 @@ const Detail = () => {
       <div className="detail-content">
         <img
           src={
-            info.imageLinks?.thumbnail ||
+            book.volumeInfo.imageLinks?.thumbnail ||
             "https://via.placeholder.com/128x192?text=No+Image"
           }
-          alt={info.title}
+          alt={book.volumeInfo.title}
           className="detail-cover"
         />
         <div className="detail-info">
-          <h1 className="detail-title">{info.title}</h1>
-          {info.authors && (
-            <p className="detail-author">저자: {info.authors.join(", ")}</p>
+          <h1 className="detail-title">{book.volumeInfo.title}</h1>
+          {book.volumeInfo.authors && (
+            <p className="detail-author">저자: {book.volumeInfo.authors.join(", ")}</p>
           )}
-          {info.publishedDate && (
-            <p className="detail-published">출판일: {info.publishedDate}</p>
+          {book.volumeInfo.publishedDate && (
+            <p className="detail-published">출판일: {book.volumeInfo.publishedDate}</p>
           )}
-          {info.publisher && (
-            <p className="detail-publisher">출판사: {info.publisher}</p>
+          {book.volumeInfo.publisher && (
+            <p className="detail-publisher">출판사: {book.volumeInfo.publisher}</p>
           )}
-          {info.description && (
-            <p className="detail-description">{info.description}</p>
+          {book.volumeInfo.description && (
+            <p className="detail-description">{book.volumeInfo.description}</p>
           )}
         </div>
       </div>

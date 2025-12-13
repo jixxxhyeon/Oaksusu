@@ -43,8 +43,9 @@ const AuthButton = styled.button`
   }
 `;
 
-const Main = ({ searchQuery, setSearchQuery, searchResults, setSearchResults }) => {
-
+const Main = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
