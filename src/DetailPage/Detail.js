@@ -2,8 +2,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./Detail.css";
 
-import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "./AuthContext";
+import { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 import {
   getBookId,
@@ -19,6 +19,8 @@ const Detail = () => {
   const { id } = useParams();
 
   const book = location.state?.book; // 검색 페이지에서 넘어온 도서 정보
+
+  const { currentUser: user, loading } = useAuth();
 
   // 로그인 정보
   const { user, loading } = useContext(AuthContext);
