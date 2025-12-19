@@ -18,7 +18,7 @@ const Detail = () => {
   }
 
   return (
-    <div className="detail-container">
+    <div className="detail-container"> 
       <button className="back-button" onClick={() => navigate(-1)}>
         ← 뒤로가기
       </button>
