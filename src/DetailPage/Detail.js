@@ -20,9 +20,10 @@ const Detail = () => {
 
   const book = location.state?.book; // 검색 페이지에서 넘어온 도서 정보
 
-
   const { currentUser: user, loading } = useAuth();
 
+  // 로그인 정보
+  const { user, loading } = useContext(AuthContext);
   const uid = user?.uid;
 
   // 북마크 상태
@@ -39,9 +40,6 @@ const Detail = () => {
   // 메모 상태 관리 
   const [memo, setMemo] = useState("");
   const [memoSaving, setMemoSaving] = useState(false);
-
-  // firestore에 저장할 때 사용할 도서 ID
-  const bookId = getBookId(book);
 
   // 북마크 상태 확인
   useEffect(() => {
