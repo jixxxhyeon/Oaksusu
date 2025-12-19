@@ -2,8 +2,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./Detail.css";
 
-import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "./AuthContext";
+import { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 import {
   getBookId,
@@ -18,8 +18,9 @@ const Detail = () => {
 
   const book = location.state?.book;
 
-  // 로그인 정보
-  const { user, loading } = useContext(AuthContext);
+
+  const { currentUser: user, loading } = useAuth();
+
   const uid = user?.uid;
 
   // 북마크 상태 표시하는 부분
@@ -29,6 +30,7 @@ const Detail = () => {
   // 도서 상세 정보
   const [detailBook, setDetailBook] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
 
   // firestore에 저장할 때 사용할 도서 ID
   const bookId = getBookId(book);
