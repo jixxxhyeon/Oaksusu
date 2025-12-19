@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // 환경 변수 검증
 const requiredEnvVars = {
@@ -63,6 +64,8 @@ try {
   app = null;
   auth = null;
 }
+
+export const db = getFirestore(app);
 
 export { app };
 export { auth };
