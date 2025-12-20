@@ -245,11 +245,7 @@ const Recommand = () => {
     try {
       // 대화 히스토리를 포함하여 API 호출
       // 로컬 개발 환경에서는 netlify dev를 사용하거나, 직접 함수를 호출할 수 있도록 설정
-      const functionUrl = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:8888/.netlify/functions/getBookRecommendations'
-        : '/.netlify/functions/getBookRecommendations';
-      
-      const response = await fetch(functionUrl, {
+      const response = await fetch('/api/getBookRecommendations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,11 +277,8 @@ const Recommand = () => {
       
       // 네트워크 오류 또는 404 오류인 경우
       if (err.message.includes('Failed to fetch') || err.message.includes('404')) {
-        errorMessage = "Netlify 함수를 찾을 수 없습니다. 개발 환경에서는 'netlify dev' 명령어를 사용하여 서버를 실행하세요.";
-        console.warn("💡 개발 환경에서 Netlify 함수를 사용하려면:");
-        console.warn("   1. 터미널에서 'npm install -g netlify-cli' 실행");
-        console.warn("   2. 'netlify dev' 명령어로 서버 시작");
-        console.warn("   3. 또는 프로덕션 빌드 후 'netlify deploy' 사용");
+        errorMessage = "API 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.";
+        console.warn("💡 API 호출 실패: 서버가 실행 중인지 확인해주세요.");
       }
       
       setError(errorMessage);
