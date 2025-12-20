@@ -4,7 +4,7 @@ import {
     setDoc,
     deleteDoc,
     serverTimestamp,
-    updateDoc, 
+    updateDoc,
   } from "firebase/firestore";
   import { db } from "../firebase";
   
@@ -31,7 +31,7 @@ import {
         book_author: (v.authors && v.authors.join(", ")) || "",
         thumbnail_url: v.imageLinks?.thumbnail || "",
         publisher: v.publisher || "",
-        status: "todo",
+        status: "todo", 
         memo: "",
         created_at: serverTimestamp(),
         updated_at: serverTimestamp(),
@@ -57,14 +57,13 @@ import {
     }
   }
   
-  // 북마크 메모 불러오기
+  // 북마크된 도서 메모 가져오기
   export async function getBookmarkMemo(uid, bookId) {
     const snap = await getDoc(bookmarkRef(uid, bookId));
-    if (!snap.exists()) return ""; // 북마크 없으면 메모 없음
+    if (!snap.exists()) return "";
     return snap.data().memo || "";
   }
   
-  // 북마크된 책만 memo 저장(만약, 북마크가 안된 책이면 에러 발생)
   export async function saveBookmarkMemo(uid, bookId, memo) {
     const ref = bookmarkRef(uid, bookId);
     const snap = await getDoc(ref);
@@ -75,6 +74,37 @@ import {
   
     await updateDoc(ref, {
       memo: memo ?? "",
+      updated_at: serverTimestamp(),
+    });
+  }
+  
+  /*
+    읽기 상태 
+    - 읽기 전: "todo"
+    - 읽는 중: "reading"
+    - 읽기 완료: "done"
+   */
+  export async function getBookmarkStatus(uid, bookId) {
+    const snap = await getDoc(bookmarkRef(uid, bookId));
+    if (!snap.exists()) return null; // 북마크 아니면 null
+    return snap.data()?.status || "todo";
+  }
+  
+  export async function setBookmarkStatus(uid, bookId, status) {
+    const ref = bookmarkRef(uid, bookId);
+    const snap = await getDoc(ref);
+  
+    if (!snap.exists()) {
+      throw new Error("BOOKMARK_REQUIRED");
+    }
+  
+    const allowed = ["todo", "reading", "done"];
+    if (!allowed.includes(status)) {
+      throw new Error("Invalid status");
+    }
+  
+    await updateDoc(ref, {
+      status,
       updated_at: serverTimestamp(),
     });
   }
