@@ -145,7 +145,7 @@ const BannerSubtitle = styled.p`
 const BannerBooks = styled.div`
   position: absolute;
   right: 80px; /* 오른쪽에서의 거리 (값을 키우면 왼쪽으로 이동) */
-  bottom: 130px;   /* 아래쪽에서의 거리 (값을 키우면 위로 이동) */
+  bottom: 80px;   /* 아래쪽에서의 거리 (값을 키우면 위로 이동) */
   z-index: 1;
   
   /* 아이콘 크기 조절 */
@@ -334,13 +334,13 @@ const Main = () => {
 
   const categories = [
     { icon: "📚", label: "소설", query: "subject:fiction", color: "#FFE5E5" },
-    { icon: "🎭", label: "에세이", query: "subject:essay", color: "#E5F3FF" },
-    { icon: "📖", label: "인문학", query: "subject:humanities", color: "#FFF5E5" },
+    { icon: "✍️", label: "에세이", query: "subject:essay", color: "#E5F3FF" },
+    { icon: "🏛️", label: "인문학", query: "subject:humanities", color: "#FFF5E5" },
     { icon: "🎨", label: "예술", query: "subject:art", color: "#FFE5F3" },
     { icon: "✨", label: "자기계발", query: "subject:self-help", color: "#F5E5FF" },
-    { icon: "📢", label: "경제경영", query: "subject:business", color: "#E5FFEF" },
-    { icon: "🆕", label: "과학", query: "subject:science", color: "#FFE5E5" },
-    { icon: "📦", label: "역사", query: "subject:history", color: "#E5F3FF" },
+    { icon: "📈", label: "경제경영", query: "subject:business", color: "#E5FFEF" },
+    { icon: "🔬", label: "과학", query: "subject:science", color: "#FFE5E5" },
+    { icon: "📜", label: "역사", query: "subject:history", color: "#E5F3FF" },
   ];
 
   useEffect(() => {
@@ -363,10 +363,18 @@ const Main = () => {
     setError(null);
 
     try {
+      let apiQuery = query;
+      // 사용자가 특정 필드를 지정하여 검색할 수 있도록 쿼리 파싱
+      // 예: "intitle:저속노화 inauthor:정희원"
+      if (!query.includes(':')) {
+        // 특정 필드 지정이 없으면, 제목, 저자, 출판사, 설명 등에서 포괄적으로 검색
+        apiQuery = `${query}`;
+      }
+
       const apiKey = process.env.REACT_APP_GOOGLE_BOOKS_API_KEY;
       const response = await axios.get(
         `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
-          query
+          apiQuery
         )}&maxResults=20&key=${apiKey}`
       );
       const items = response.data.items || [];

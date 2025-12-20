@@ -1,38 +1,4 @@
-// api/getBookRecommendations.js
-
-const Anthropic = require('@anthropic-ai/sdk');
-const axios = require('axios');
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-// Google Books API로 책 검색
-async function searchBooks(query) {
-  try {
-    const apiKey = process.env.REACT_APP_GOOGLE_BOOKS_API_KEY;
-    const response = await axios.get(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&key=${apiKey}`
-    );
-    
-    if (response.data.items && response.data.items.length > 0) {
-      return response.data.items.map(item => ({
-        id: item.id,
-        title: item.volumeInfo.title || '제목 없음',
-        authors: item.volumeInfo.authors || ['저자 미상'],
-        coverUrl: item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || 
-                  item.volumeInfo.imageLinks?.smallThumbnail?.replace('http:', 'https:') ||
-                  null,
-        description: item.volumeInfo.description || '',
-        publisher: item.volumeInfo.publisher || ''
-      }));
-    }
-    return [];
-  } catch (error) {
-    console.error('Google Books API 오류:', error);
-    return [];
-  }
-}
+// /api/getBookRecommendations.js
 
 export default async function handler(req, res) {
   // CORS 헤더 설정
@@ -52,92 +18,139 @@ export default async function handler(req, res) {
 
   // POST 요청만 허용
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { messages } = req.body;
 
+    // 메시지 검증
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: '유효하지 않은 요청입니다.' });
     }
 
-    // Claude API 호출
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: `당신은 친절한 도서 추천 전문가입니다. 
-사용자의 취향과 관심사를 파악하여 적절한 책을 추천해주세요.
-추천할 때는 반드시 구체적인 책 제목과 저자를 포함해야 합니다.
+    // 환경 변수 확인
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const GOOGLE_BOOKS_API_KEY = process.env.GOOGLE_BOOKS_API_KEY;
 
-응답 형식:
-1. 간단한 인사말 또는 추천 이유 (1-2문장)
-2. 추천 도서 목록을 다음 형식으로 제시:
-   BOOK: [책 제목] by [저자명]
-   BOOK: [책 제목] by [저자명]
-   (최대 5권까지)
+    if (!OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY가 설정되지 않았습니다.');
+      return res.status(500).json({ error: 'API 키가 설정되지 않았습니다.' });
+    }
 
-예시:
-스트레스 해소에 좋은 책을 찾으시는군요! 다음 책들을 추천드립니다:
+    // OpenAI API 호출
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `당신은 도서 추천 전문가입니다. 사용자의 요청에 따라 적절한 책을 추천해주세요. 
+응답은 반드시 다음 JSON 형식으로 해주세요:
+{
+  "message": "추천 설명",
+  "bookTitles": ["책 제목1", "책 제목2", "책 제목3"]
+}
 
-BOOK: 아몬드 by 손원평
-BOOK: 달러구트 꿈 백화점 by 이미예
-BOOK: 불편한 편의점 by 김호연`,
-      messages: messages,
+최대 5권까지 추천하고, 한국어 책을 우선으로 추천해주세요.`
+          },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 500
+      })
     });
 
-    const aiMessage = response.content[0].text;
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      console.error('OpenAI API 오류:', errorText);
+      return res.status(500).json({ 
+        error: 'AI 응답 생성에 실패했습니다.',
+        details: errorText.substring(0, 200)
+      });
+    }
+
+    const openaiData = await openaiResponse.json();
+    const aiMessage = openaiData.choices[0].message.content;
+
+    console.log('OpenAI 응답:', aiMessage);
+
+    // JSON 파싱 시도
+    let parsedResponse;
+    try {
+      // JSON 코드 블록 제거
+      const cleanedMessage = aiMessage.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      parsedResponse = JSON.parse(cleanedMessage);
+    } catch (parseError) {
+      console.error('JSON 파싱 실패:', parseError);
+      // JSON 파싱 실패 시 텍스트 응답만 반환
+      return res.status(200).json({
+        message: aiMessage,
+        books: []
+      });
+    }
+
+    const bookTitles = parsedResponse.bookTitles || [];
     
-    // "BOOK:" 형식의 추천 도서 추출
-    const bookMatches = aiMessage.match(/BOOK:\s*(.+?)\s+by\s+(.+?)(?=\n|$)/gi);
-    
-    let books = [];
-    if (bookMatches && bookMatches.length > 0) {
-      // 각 책에 대해 Google Books API로 검색
-      const searchPromises = bookMatches.slice(0, 5).map(async (match) => {
-        const parts = match.replace('BOOK:', '').split(' by ');
-        const title = parts[0]?.trim();
-        const author = parts[1]?.trim();
+    if (bookTitles.length === 0) {
+      return res.status(200).json({
+        message: parsedResponse.message || aiMessage,
+        books: []
+      });
+    }
+
+    // Google Books API로 책 정보 가져오기
+    const bookPromises = bookTitles.map(async (title) => {
+      try {
+        const searchQuery = encodeURIComponent(title);
+        const googleBooksUrl = GOOGLE_BOOKS_API_KEY 
+          ? `https://www.googleapis.com/books/v1/volumes?q=${searchQuery}&key=${GOOGLE_BOOKS_API_KEY}&maxResults=1`
+          : `https://www.googleapis.com/books/v1/volumes?q=${searchQuery}&maxResults=1`;
         
-        if (title) {
-          // 제목과 저자로 검색
-          const searchQuery = author ? `${title} ${author}` : title;
-          const searchResults = await searchBooks(searchQuery);
-          
-          if (searchResults.length > 0) {
-            return searchResults[0];
-          }
+        const response = await fetch(googleBooksUrl);
+        
+        if (!response.ok) {
+          console.error(`Google Books API 오류 (${title}):`, response.status);
+          return null;
+        }
+
+        const data = await response.json();
+        
+        if (data.items && data.items.length > 0) {
+          const book = data.items[0];
+          return {
+            id: book.id,
+            title: book.volumeInfo.title,
+            authors: book.volumeInfo.authors || ['저자 미상'],
+            coverUrl: book.volumeInfo.imageLinks?.thumbnail || 
+                     book.volumeInfo.imageLinks?.smallThumbnail ||
+                     'https://via.placeholder.com/140x180?text=No+Image'
+          };
         }
         return null;
-      });
+      } catch (error) {
+        console.error(`책 정보 가져오기 실패 (${title}):`, error);
+        return null;
+      }
+    });
 
-      const searchedBooks = await Promise.all(searchPromises);
-      books = searchedBooks.filter(book => book !== null);
-    }
+    const books = (await Promise.all(bookPromises)).filter(book => book !== null);
 
-    // 책을 찾았으면 책 정보와 함께 반환
-    if (books.length > 0) {
-      // BOOK: 형식을 제거한 메시지
-      const cleanMessage = aiMessage.split('BOOK:')[0].trim();
-      
-      return res.status(200).json({
-        message: cleanMessage || '이런 책들은 어떠세요? 📚',
-        books: books,
-      });
-    }
-
-    // 책을 찾지 못했으면 텍스트 메시지만 반환
     return res.status(200).json({
-      message: aiMessage,
-      books: [],
+      message: parsedResponse.message || '이런 책들을 추천드립니다!',
+      books: books
     });
 
   } catch (error) {
-    console.error('오류 발생:', error);
-    
-    return res.status(500).json({
-      error: '도서 추천 중 오류가 발생했습니다.',
-      details: error.message,
+    console.error('API 함수 오류:', error);
+    return res.status(500).json({ 
+      error: '서버 오류가 발생했습니다.',
+      details: error.message 
     });
   }
 }

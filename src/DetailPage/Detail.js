@@ -4,6 +4,7 @@ import "./Detail.css";
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { FaBookmark, FaRegBookmark } from "react-icons/fa";
 
 import {
   getBookId,
@@ -240,10 +241,6 @@ const Detail = () => {
         ← 뒤로가기
       </button>
 
-      <button onClick={onToggleBookmark} disabled={bmLoading}>
-        {bookmarked ? "★ 북마크 해제" : "☆ 북마크 추가"}
-      </button>
-
       <div className="detail-content">
         <img
           src={
@@ -255,7 +252,17 @@ const Detail = () => {
         />
 
         <div className="detail-info">
-          <h1 className="detail-title">{displayBook?.volumeInfo?.title}</h1>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+            <h1 className="detail-title" style={{ margin: 0 }}>{displayBook?.volumeInfo?.title}</h1>
+            <button 
+              onClick={onToggleBookmark} 
+              disabled={bmLoading}
+              style={{ marginLeft: "16px", flexShrink: 0 }}
+              className="bookmark-icon-btn"
+            >
+              {bookmarked ? <FaBookmark size={24} color="#617830" /> : <FaRegBookmark size={24} color="#617830" />}
+            </button>
+          </div>
 
           {displayBook?.volumeInfo?.authors && (
             <p>저자: {displayBook.volumeInfo.authors.join(", ")}</p>

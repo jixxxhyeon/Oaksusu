@@ -52,26 +52,24 @@
 }
 
 /* 북마크 버튼 */
-.detail-container > button:not(.back-button) {
-  margin-bottom: 20px;
-  margin-left: 8px;
-  padding: 10px 20px;
-  background: var(--bg-white);
-  border: 1.5px solid var(--accent-green);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--primary-green);
+.bookmark-icon-btn {
+  background: none;
+  border: none;
   cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
+  border-radius: 50%;
 }
 
-.detail-container > button:not(.back-button):hover:not(:disabled) {
-  background: var(--soft-green);
-  transform: translateY(-1px);
+.bookmark-icon-btn:hover:not(:disabled) {
+  background-color: var(--soft-green);
+  transform: scale(1.1);
 }
 
-.detail-container > button:disabled {
+.bookmark-icon-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
