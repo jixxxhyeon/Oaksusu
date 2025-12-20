@@ -11,7 +11,15 @@ import {
   toggleBookmark,
   getBookmarkMemo,
   saveBookmarkMemo,
+  getBookmarkStatus,
+  setBookmarkStatus,
 } from "../services/bookmarkService";
+
+const STATUS_LABEL = {
+  todo: "읽기전",
+  reading: "읽는 중",
+  done: "읽기 완료",
+};
 
 const Detail = () => {
   const location = useLocation();
@@ -20,7 +28,7 @@ const Detail = () => {
 
   const book = location.state?.book;
 
-  // AuthContext는 useAuth 하나만 사용(중복 제거한 부분 !!)
+  // AuthContext는 useAuth만 사용
   const { currentUser: user, loading } = useAuth();
   const uid = user?.uid;
 
@@ -39,7 +47,11 @@ const Detail = () => {
   const [memo, setMemo] = useState("");
   const [memoSaving, setMemoSaving] = useState(false);
 
-  // 북마크 상태 확인
+  // 읽기 상태
+  const [status, setStatus] = useState("todo");
+  const [statusSaving, setStatusSaving] = useState(false);
+
+  // 1) 북마크 상태 확인
   useEffect(() => {
     if (!uid || !bookId) return;
 
@@ -55,7 +67,7 @@ const Detail = () => {
     checkBookmark();
   }, [uid, bookId]);
 
-  // 구글북스 API에서 도서 상세 정보 불러오기
+  // 2) 구글북스 API에서 도서 상세 정보 불러오기
   useEffect(() => {
     const fetchBookDetail = async () => {
       setDetailLoading(true);
@@ -79,20 +91,27 @@ const Detail = () => {
     fetchBookDetail();
   }, [id]);
 
-  // 북마크된 도서만 메모 불러오기
+  // 3) 북마크된 도서만 memo/status 불러오기
   useEffect(() => {
     if (!uid || !bookId) return;
 
     const run = async () => {
       if (!bookmarked) {
         setMemo("");
+        setStatus("todo");
         return;
       }
+
       try {
-        const m = await getBookmarkMemo(uid, bookId);
-        setMemo(m);
+        const [m, s] = await Promise.all([
+          getBookmarkMemo(uid, bookId),
+          getBookmarkStatus(uid, bookId),
+        ]);
+
+        setMemo(m || "");
+        setStatus(s || "todo");
       } catch (e) {
-        console.error("메모 불러오기 실패", e);
+        console.error("메모/상태 불러오기 실패", e);
       }
     };
 
@@ -128,6 +147,7 @@ const Detail = () => {
 
   const displayBook = detailBook || book;
 
+  // 북마크 토글
   const onToggleBookmark = async () => {
     if (!uid || !bookId) return;
 
@@ -143,13 +163,42 @@ const Detail = () => {
       const now = await toggleBookmark(uid, bookForSave);
       setBookmarked(now);
 
-      // 북마크 해제되면 메모 초기화
-      if (!now) setMemo("");
+      // 북마크 해제되면 초기화
+      if (!now) {
+        setMemo("");
+        setStatus("todo");
+      }
     } catch (e) {
       console.error(e);
       alert("북마크 처리 중 오류가 발생했습니다.");
     } finally {
       setBmLoading(false);
+    }
+  };
+
+  // 읽기 상태 변경 저장 (북마크된 책만)
+  const onChangeStatus = async (nextStatus) => {
+    setStatus(nextStatus); //  ui 먼저 반영
+
+    if (!uid || !bookId) return;
+
+    if (!bookmarked) {
+      alert("북마크한 책만 읽기 상태를 설정할 수 있어요. 먼저 북마크 해주세요!");
+      return;
+    }
+
+    setStatusSaving(true);
+    try {
+      await setBookmarkStatus(uid, bookId, nextStatus);
+    } catch (e) {
+      if (String(e?.message).includes("BOOKMARK_REQUIRED")) {
+        alert("북마크한 책만 읽기 상태를 설정할 수 있어요.");
+      } else {
+        console.error(e);
+        alert("읽기 상태 저장 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setStatusSaving(false);
     }
   };
 
@@ -218,6 +267,68 @@ const Detail = () => {
 
           {displayBook?.volumeInfo?.publisher && (
             <p>출판사: {displayBook.volumeInfo.publisher}</p>
+          )}
+
+          {/* 읽기 상태: 북마크된 책에만 */}
+          {bookmarked ? (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ marginBottom: 8, fontWeight: 700, color: "#617830" }}>
+                읽기 상태: {STATUS_LABEL[status]}
+                {statusSaving ? " (저장 중...)" : ""}
+              </div>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={() => onChangeStatus("todo")}
+                  disabled={statusSaving}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #617830",
+                    background: status === "todo" ? "#617830" : "#fff",
+                    color: status === "todo" ? "#fff" : "#617830",
+                    cursor: "pointer",
+                  }}
+                >
+                  읽기전
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChangeStatus("reading")}
+                  disabled={statusSaving}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #617830",
+                    background: status === "reading" ? "#617830" : "#fff",
+                    color: status === "reading" ? "#fff" : "#617830",
+                    cursor: "pointer",
+                  }}
+                >
+                  읽는 중
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChangeStatus("done")}
+                  disabled={statusSaving}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #617830",
+                    background: status === "done" ? "#617830" : "#fff",
+                    color: status === "done" ? "#fff" : "#617830",
+                    cursor: "pointer",
+                  }}
+                >
+                  읽기 완료
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 16, color: "#666" }}>
+              읽기 상태는 <b>북마크한 책</b>에서만 설정할 수 있어요.
+            </div>
           )}
 
           {/* 도서 세부내용 */}
