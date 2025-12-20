@@ -33,7 +33,6 @@
     "start": "concurrently \"node server.js\" \"react-scripts start\"",
     "start:react": "react-scripts start",
     "start:server": "node server.js",
-    "dev": "netlify dev",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
